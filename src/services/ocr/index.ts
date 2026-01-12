@@ -27,7 +27,6 @@ async function saveImage(inputBuffer: Buffer, outputFileName: string) {
   }
 }
 async function getIsDark(buffer: Buffer) {
-  // สร้างภาพขนาดจิ๋ว (เช่น 10x10 px) เพื่อหาค่าเฉลี่ยสีเท่านั้น
   const tinyStats = await sharp(buffer).resize(10, 10).stats();
   const mean = tinyStats.channels.reduce((acc, c) => acc + c.mean, 0) / tinyStats.channels.length;
   return mean < 128;
@@ -47,24 +46,21 @@ async function normalizeWithTheme(sharpImage: sharp.Sharp) {
 }
 async function fastResize(buffer: Buffer, percent: number = 50) {
   const image = sharp(buffer);
-
-  // 1. ดึงขนาดต้นฉบับ (metadata ใช้เวลาน้อยมาก ไม่เหมือน stats)
   const meta = await image.metadata();
 
   if (meta.width && meta.height) {
     const newWidth = Math.round(meta.width * (percent / 100));
 
     return await image
-      .resize(newWidth) // ใส่แค่ Width เดี๋ยว Sharp จัดการ Height ให้เองตามสัดส่วน
-      .grayscale()      // ช่วยลดขนาด Buffer ลงได้อีก 3 เท่า (จาก 3 channels เหลือ 1)
+      .resize(newWidth)
+      .grayscale()
       .toBuffer();
   }
 
-  return buffer; // ถ้าดึงขนาดไม่ได้ ให้ส่งตัวเดิมกลับ
+  return buffer;
 }
 function convertBackToWrite(image: Sharp, isDark: boolean) {
   if (isDark) return image.negate({ alpha: false })
-  // .modulate({ brightness: isDark ? 2 : 0.4 })
   return image
 }
 async function greyScale(buffer: Buffer) {

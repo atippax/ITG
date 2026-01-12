@@ -8,6 +8,7 @@ import imageProcessRoute, { doOcrImage, doTask } from "./routes/image-process";
 import { cleanText } from "../services/ocr";
 import { binanceThManagerParser } from "../services/binance-th/manager";
 import { errorIntercepter } from "./intercepters/error.intercepter";
+import taskRoute from "./routes/task";
 let app: Express = express();
 const port: number = 8080;
 app.use(cors());
@@ -22,13 +23,8 @@ app.use('/v1/dime/process-text', (req: Request) => (dimeManagerParser(cleanText(
 app.use('/v1/binance-th', imageProcessRoute(doOcrImage(binanceThManagerParser)))
 app.use('/v2/binance-th', (req: Request) => imageProcessRoute(doTask(tasks, req.baseUrl.replace('/', ''), binanceThManagerParser)))
 app.use('/v2/dime', (req: Request) => imageProcessRoute(doTask(tasks, req.baseUrl.replace('/', ''), dimeManagerParser)))
+app.use(taskRoute(tasks))
 app.use(express.json());
-
-try {
-  app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
-  });
-}
-catch (ex) {
-  console.error(ex)
-}
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});

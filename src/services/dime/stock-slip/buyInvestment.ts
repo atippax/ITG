@@ -2,50 +2,16 @@ import type { BasePatternExtractor } from "../../extracter/patterns/base-pattern
 import {
   dateRegexWithOutPMAM,
   extractDateFromText,
-  extractDatesFromText,
-  findSame,
-  findWord,
-  findWordUseNextLine,
-  parseDateTimeToDateObject,
-  parseUsd,
+  getBefore,
+  getFloat,
+  getTax,
+  getWordAfter,
+  tryGetFloat,
 } from "../../util";
 import type { IInvestmentLog, Investment, InvestmentType, Vat } from "./core";
 import { getSymbol, getType, sumVat } from "./util";
 
-function getTax(text: string, keyword: string) {
-  try {
-    const tax = getWordAfter(text, keyword, 3);
-    return getFloat(tax.replace(keyword, ""));
-  } catch (ex) {
-    return 0;
-  }
-}
-function getWordAfter(text: string, keyword: string, count: number) {
-  const pattern = `${keyword}` + `\\s+(\\S+)`.repeat(count);
-  const regex = new RegExp(pattern, "i");
-  const match = text.match(regex);
-  if (!match) throw new Error(`not found ${keyword}`);
-  return match[0];
-}
-function getFloat(text: string) {
-  const regex = new RegExp(/-?\d+\.?\d*/g);
-  const match = text.match(regex);
-  if (!match) throw new Error(`not found number`);
-  return parseFloat(match[0]);
-}
-function tryGetFloat(text: string) {
-  try {
-    return getFloat(text);
-  } catch (ex) {
-    return undefined;
-  }
-}
-function getBefore(text: string, keyword: string, count: number) {
-  const pattern = `(\\S+)\\s+`.repeat(count) + `${keyword}`;
-  const match = text.match(new RegExp(pattern, "i"));
-  if (!match) throw new Error(`not found ${keyword}`);
-  return match[0];
-}
+
 export class BuyInvestmentLog implements IInvestmentLog {
   constructor(private words: string, private extractor: BasePatternExtractor) {
     // console.log(words);

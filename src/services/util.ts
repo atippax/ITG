@@ -1,7 +1,3 @@
-export function filterEmptyWord(words: string) {
-  // return words.filter((w) => w != "");
-}
-
 export function defaultZero(value: number | null) {
   return value || 0;
 }
@@ -23,7 +19,40 @@ export function findWordUseNextLine(words: string[], search: string) {
   const word = words[index + 1];
   return word;
 }
-
+export function getTax(text: string, keyword: string) {
+  try {
+    const tax = getWordAfter(text, keyword, 3);
+    return getFloat(tax.replace(keyword, ""));
+  } catch (ex) {
+    return 0;
+  }
+}
+export function getWordAfter(text: string, keyword: string, count: number) {
+  const pattern = `${keyword}` + `\\s+(\\S+)`.repeat(count);
+  const regex = new RegExp(pattern, "i");
+  const match = text.match(regex);
+  if (!match) throw new Error(`not found ${keyword}`);
+  return match[0];
+}
+export function getFloat(text: string) {
+  const regex = new RegExp(/-?\d+\.?\d*/g);
+  const match = text.match(regex);
+  if (!match) throw new Error(`not found number`);
+  return parseFloat(match[0]);
+}
+export function tryGetFloat(text: string) {
+  try {
+    return getFloat(text);
+  } catch (ex) {
+    return undefined;
+  }
+}
+export function getBefore(text: string, keyword: string, count: number) {
+  const pattern = `(\\S+)\\s+`.repeat(count) + `${keyword}`;
+  const match = text.match(new RegExp(pattern, "i"));
+  if (!match) throw new Error(`not found ${keyword}`);
+  return match[0];
+}
 export function cleanText(word: string) {
   return word.replaceAll("\r", "");
 }

@@ -1,6 +1,5 @@
 import { BasePatternExtractor } from "../../extracter/patterns/base-pattern-extractor";
-import { DatePatternExtractor } from "../../extracter/patterns/date-pattern-extractor";
-import { cleanText, filterEmptyWord } from "../../util";
+import { cleanText } from "../../util";
 import type { Transaction } from "../transaction/transaction";
 import { BuyInvestmentLog } from "./buyInvestment";
 import { SellInvestmentLog } from "./sellInvestment";
@@ -29,24 +28,21 @@ export interface Investment extends Transaction {
 export function createAInvestmentLog(word: string): IInvestmentLog {
   const words = cleanText(word);
   const type = getType(words) as InvestmentType;
-  switch (type) {
-    case "Sell":
-      return new SellInvestmentLog(
-        words,
-        new BasePatternExtractor(
-          /(?<=\d{1,2}\s[A-Z][a-z]{2}\s\d{4}\s-\s\d{2}:\d{2})/g
-        )
-      );
-    case "Buy":
-      return new BuyInvestmentLog(
-        words,
-        new BasePatternExtractor(
-          /(?<=\d{1,2}\s[A-Z][a-z]{2}\s\d{4}\s-\s\d{2}:\d{2})/g
-        )
-      );
-    default:
-      throw Error("no type");
-  }
+  if (type == "Sell")
+    return new SellInvestmentLog(
+      words,
+      new BasePatternExtractor(
+        /(?<=\d{1,2}\s[A-Z][a-z]{2}\s\d{4}\s-\s\d{2}:\d{2})/g
+      )
+    );
+  if (type == 'Buy')
+    return new BuyInvestmentLog(
+      words,
+      new BasePatternExtractor(
+        /(?<=\d{1,2}\s[A-Z][a-z]{2}\s\d{4}\s-\s\d{2}:\d{2})/g
+      )
+    );
+  throw Error("no type");
 }
 export interface IInvestmentLog {
   toJson(): Investment;

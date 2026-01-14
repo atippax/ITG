@@ -1,5 +1,5 @@
 # Logs
-/imageTest
+*imageTest
 logs
 *.log
 npm-debug.log*

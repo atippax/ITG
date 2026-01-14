@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	text:= service.ParseImagePathToText("../imageTest/1000001055.jpg")
+	text:= service.ParseImagePathToText("../imageTest/dime/en/transactions/1.jpg")
 	pattern := `\d{1,2}\s[A-Z][a-z]{2}\s\d{4}\s-\s\d{2}:\d{2}:\d{2}\s(AM|PM)`
 	re := regexp.MustCompile(pattern)
 	parts := re.Split(text, -1)

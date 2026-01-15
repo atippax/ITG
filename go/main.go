@@ -3,7 +3,12 @@ package main
 import (
 	"ITG/services"
 	dime_transaction "ITG/services/dime/transaction"
+	dime_transaction_dividend "ITG/services/dime/transaction/dividend"
+	dime_transaction_fee "ITG/services/dime/transaction/fee"
+	dime_transaction_stock "ITG/services/dime/transaction/stock"
 	"net/http"
+	"sort"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -59,20 +64,20 @@ func handler(c echo.Context) error {
     for r := range resultChan {
         finalResults = append(finalResults, r)
     }
-// 	sort.Slice(finalResults, func(i, j int) bool { 
-// 		getDate := func(item any) time.Time {
-//         switch v := item.(type) {
-//         case *dime_transaction_dividend.DimeDividendTransaction:
-//             return v.ExecutedDate
-//         case *dime_transaction_fee.DimeTransactionFee:
-//             return v.ExecutedDate
-// 		case *dime_transaction_stock.DimeTransactionStock:
-// 			return v.ExecutedDate
-//         default:
-//             return time.Time{} 
-// 		}}
-//     return getDate(finalResults[i]).Before(getDate(finalResults[j]))
-// })
+	sort.Slice(finalResults, func(i, j int) bool { 
+		getDate := func(item any) time.Time {
+        switch v := item.(type) {
+        case *dime_transaction_dividend.DimeDividendTransaction:
+            return v.ExecutedDate
+        case *dime_transaction_fee.DimeTransactionFee:
+            return v.ExecutedDate
+		case *dime_transaction_stock.DimeTransactionStock:
+			return v.ExecutedDate
+        default:
+            return time.Time{} 
+		}}
+    return getDate(finalResults[i]).Before(getDate(finalResults[j]))
+})
     return c.JSON(http.StatusOK, finalResults)
 }
 func hello(c echo.Context)error{

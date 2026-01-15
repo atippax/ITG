@@ -34,10 +34,15 @@ func handler(c echo.Context) error{
 	}
 		return c.JSON(http.StatusOK,results)
 }
+func hello(c echo.Context)error{
+	return c.String(http.StatusOK,"hi from itg")
+
+}
 func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.GET("/",hello)
 	e.POST("/dime/text-process",handler)
 	e.Logger.Fatal(e.Start(":8081"))
 }

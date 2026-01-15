@@ -1,94 +1,144 @@
 package main
 
 import (
+	"fmt"
+	"net/http"
+	"runtime"
+	"sort"
+	"time"
+
 	"ITG/services"
 	dime_transaction "ITG/services/dime/transaction"
 	dime_transaction_dividend "ITG/services/dime/transaction/dividend"
 	dime_transaction_fee "ITG/services/dime/transaction/fee"
 	dime_transaction_stock "ITG/services/dime/transaction/stock"
-	"net/http"
-	"sort"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/sync/errgroup"
 )
+
 type DimeBody struct {
-    Text string `json:"text"`
+	Text string `json:"text"`
+	Sort bool   `json:"sort"`
 }
-func handler(c echo.Context) error {
-    u := new(DimeBody)
-    if err := c.Bind(u); err != nil {
-        return err
-    }
 
-    transactions := services.SplitWithDate(u.Text)    
-    g, ctx := errgroup.WithContext(c.Request().Context())
-    resultChan := make(chan any, len(transactions))
+func processing(text string) (any, error) {
+	parser, err := dime_transaction.NewDimeTransaction(text)
+	if err != nil {
+		return nil, err
+	}
+	result, err := parser.ToJson()
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
 
-    for _, n := range transactions {
-        txText := n 
-        
-        g.Go(func() error {
-            select {
-            case <-ctx.Done():
-                return ctx.Err()
-            default:
-            }
+func hello(c echo.Context) error {
+	return c.String(http.StatusOK, "hi from itg")
+}
 
-            parser, err := dime_transaction.NewDimeTransaction(txText)
-            if err != nil {
-                return err 
-            }
+type Param struct {
+	c            echo.Context
+	transactions []string
+	processing   func(text string) (any, error)
+	sort         bool
+}
 
-            result, err := parser.ToJson()
-            if err != nil {
-                return err
-            }
-
-            resultChan <- result
-            return nil
-        })
-    }
-
-    if err := g.Wait(); err != nil {
-        return c.JSON(http.StatusBadRequest, map[string]string{
-            "error": "Process stopped due to: " + err.Error(),
-        })
-    }
-
-    close(resultChan)
-
-    var finalResults []any
-    for r := range resultChan {
-        finalResults = append(finalResults, r)
-    }
-	sort.Slice(finalResults, func(i, j int) bool { 
+func sortResult(result []any) {
+	sort.Slice(result, func(i, j int) bool {
 		getDate := func(item any) time.Time {
-        switch v := item.(type) {
-        case *dime_transaction_dividend.DimeDividendTransaction:
-            return v.ExecutedDate
-        case *dime_transaction_fee.DimeTransactionFee:
-            return v.ExecutedDate
-		case *dime_transaction_stock.DimeTransactionStock:
-			return v.ExecutedDate
-        default:
-            return time.Time{} 
-		}}
-    return getDate(finalResults[i]).Before(getDate(finalResults[j]))
-})
-    return c.JSON(http.StatusOK, finalResults)
+			switch v := item.(type) {
+			case *dime_transaction_dividend.DimeDividendTransaction:
+				return v.ExecutedDate
+			case *dime_transaction_fee.DimeTransactionFee:
+				return v.ExecutedDate
+			case *dime_transaction_stock.DimeTransactionStock:
+				return v.ExecutedDate
+			default:
+				return time.Time{}
+			}
+		}
+		return getDate(result[i]).Before(getDate(result[j]))
+	})
 }
-func hello(c echo.Context)error{
-	return c.String(http.StatusOK,"hi from itg")
 
+func singleProcess(param Param) error {
+	results := make([]any, len(param.transactions))
+	for index, transaction := range param.transactions {
+		result, err := processing(transaction)
+		if err != nil {
+			return param.c.String(http.StatusInternalServerError, err.Error())
+		}
+		results[index] = result
+	}
+	if param.sort {
+		sortResult(results)
+	}
+	return param.c.JSON(http.StatusOK, results)
 }
+
+func multitaskProcess(param Param) error {
+	numWorkers := runtime.NumCPU()
+	fmt.Println(fmt.Sprintf("cpu %d cores", numWorkers))
+	g, ctx := errgroup.WithContext(param.c.Request().Context())
+	resultChan := make(chan any, numWorkers)
+	for _, transaction := range param.transactions {
+		g.Go(func() error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
+			result, err := processing(transaction)
+			if err != nil {
+				return err
+			}
+			resultChan <- result
+			return nil
+		})
+	}
+	go func() {
+		g.Wait()
+		close(resultChan)
+	}()
+
+	results := []any{}
+	for r := range resultChan {
+		results = append(results, r)
+	}
+
+	if err := g.Wait(); err != nil {
+		return param.c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+	if param.sort {
+		sortResult(results)
+	}
+	return param.c.JSON(http.StatusOK, results)
+}
+
+func compose(
+	req func(param Param) error,
+	processing func(text string) (any, error),
+) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		u := new(DimeBody)
+		if err := c.Bind(u); err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		transactions := services.SplitWithDate(u.Text)
+		param := Param{transactions: transactions, processing: processing, c: c, sort: u.Sort}
+		return req(param)
+	}
+}
+
 func main() {
 	e := echo.New()
-	e.Use(middleware.Logger())
+	// e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.GET("/",hello)
-	e.POST("/dime/text-process",handler)
+	e.GET("/", hello)
+	e.POST("single/dime/text-process", compose(singleProcess, processing))
+	e.POST("multi/dime/text-process", compose(multitaskProcess, processing))
 	e.Logger.Fatal(e.Start(":8081"))
 }

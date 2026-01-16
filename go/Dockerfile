@@ -20,6 +20,9 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-eng \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+    
+RUN wget https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata -O /usr/share/tesseract-ocr/5/tessdata/eng.traineddata && \
+    wget https://github.com/tesseract-ocr/tessdata_fast/raw/main/tha.traineddata -O /usr/share/tesseract-ocr/5/tessdata/tha.traineddata
 
 ENV OMP_THREAD_LIMIT=1
 WORKDIR /root/

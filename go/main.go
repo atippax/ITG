@@ -139,7 +139,6 @@ var (
 )
 
 func ocrHandler(c echo.Context) error {
-	fmt.Println("come")
 	err := c.Request().ParseMultipartForm(32 << 20)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Parse form failed: "+err.Error())
@@ -192,7 +191,6 @@ func ocrHandler(c echo.Context) error {
 }
 
 func ocrHandlerSafe(c echo.Context) error {
-	fmt.Println("come")
 	mutex.Lock()
 	defer mutex.Unlock()
 	// err := c.Request().ParseMultipartForm(32 << 20)

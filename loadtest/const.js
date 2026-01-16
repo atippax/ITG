@@ -2,10 +2,10 @@ import http from "k6/http";
 import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 const options = {
   stages: [
-    { duration: "30s", target: 4 },
-    { duration: "10s", target: 15 },
+    { duration: "30s", target: 5 },
+    { duration: "10s", target: 10 },
     { duration: "1m", target: 25 },
-    { duration: "30s", target: 15 },
+    { duration: "30s", target: 10 },
     { duration: "30s", target: 0 },
   ],
 };

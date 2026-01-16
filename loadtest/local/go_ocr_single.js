@@ -4,8 +4,9 @@ import { paramsFile, payloadFiles } from "../const.js";
 import { sleep } from "k6";
 export { options } from "../const.js";
 export default function () {
+  console.log(payloadFiles);
   const res = http.post(
-    "http://localhost:8081/ocr-single-safe",
+    "https://itg-go.zeabur.app/ocr-single-safe",
     payloadFiles.body(),
     paramsFile
   );

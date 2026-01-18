@@ -141,7 +141,7 @@ func main() {
 	}))
 	e.Use(middleware.Recover())
 	e.GET("/", hello)
-	e.POST("ocr-single", ocrHandler.HandleUpload(dimets.ReadToJson))
+	e.POST("dime", ocrHandler.HandleUpload(dimets.ReadToJson))
 	pprof.Register(e)
 	e.Logger.Fatal(e.Start(":8081"))
 }
